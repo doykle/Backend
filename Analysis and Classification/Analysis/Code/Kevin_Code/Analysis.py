@@ -258,6 +258,7 @@ def J48_classify():
       print classify
    
    # Selects the classification with largest number of tallies
+   # alt_str is used for output, when classification is not definitive
    decision_val = 0
    total_val = 0
    decision_str = ''
@@ -296,7 +297,9 @@ def write_output():
          output(filename)
    else:
       output(filename)
-      
+
+## Modification by Kevin Doyle
+#  19-11-2014      
 def output(filename):
    out = open(filename, 'w')
    for element in Spectrum:
@@ -326,6 +329,7 @@ def write_indv_spectrum():
       output_is(filename)
 ##
 
+## Added by Kevin Doyle
 def output_is(filename):
    idx_stop = (len(individual_spectrum_array[0]) - 1)
    out = open(filename, 'w')
@@ -338,6 +342,7 @@ def output_is(filename):
          #   out.write(",computer")
       out.write("\n")
    out.close()
+##
       
 def print_help():
    print "\nAnalysis.py."
