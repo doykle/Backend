@@ -15,11 +15,18 @@
 ##
 # Modifications 
 # Name: Kevin Doyle, kdoyle@ucsc.edu
+# 
 # Date: 18 November 2014
-#
 # Added -I option to support output of power spectrum data
 #  for chunks of time, as decided by the variable 'blockwidth'
 # Output goes to file: [input filename]_is.csv
+#
+# Date: 19 November 2014
+# Added -C option
+#  -C processes the input file and classifies it using a
+#  a static classification routine. This classification was
+#  generated in Weka. 
+# Output: 
 ##
 
 #For numerical analysis                                                 
@@ -60,7 +67,7 @@ def init():
    #characters. Make a list of those that are valid, and a list of 
    #those that aren't. Let the user know if they endered an invalid 
    #option.
-   valid_options = 'dfhIpvVw'
+   valid_options = 'CdfhIpvVw'
    alleged_options = list(set(''.join(sys.argv[1:-1])))
    options = [x for x in alleged_options if re.search(x, valid_options)]
    non_options = [x for x in alleged_options if x not in options and x != '-']
@@ -158,8 +165,14 @@ def produce_mean_normalized_power_spectrum(blocklist):
       power_spectrum = np.square(np.absolute(np.fft.rfft(blocklist[i])))
       ## Added by Kevin Doyle
       #  Prints the power spectrum from each individual time block
-      if 'I' in Options:
-         individual_spectrum_array.append(power_spectrum)
+      minor_sum = float(0.0)
+      new_spec = []
+      if 'I' in Options or 'C' in Options:
+         for val in power_spectrum:
+            minor_sum += float(val)
+         for val in power_spectrum:
+            new_spec.append(float(val)/float(minor_sum))
+         individual_spectrum_array.append(new_spec)
       ##
       sum_power_spectrum = np.add(sum_power_spectrum, power_spectrum)
 
@@ -204,8 +217,72 @@ def display(spectrum):
          else:
             print "Plot not written."
       else:
-         pyp.savefig(filename) 
+         pyp.savefig(filename)
+         
+## Added by Kevin Doyle   
+#  With option -C, this will output classification information    
+def J48_classify():
+   # These are the supported categories
+   classify = {'television':0, 'microwave':0, 'computer':0}
+   
+   # Decision tree, as defined in Weka
+   for array in individual_spectrum_array:
+      if array[93] <= 0.000065:
+         classify['microwave'] = classify['microwave'] + 1
+      else:
+         if array[6] <= 0.060487:
+            if array[28] <= 0.031599:
+               if array[83] <= 0.000789:
+                  classify['television'] = classify['television'] + 1
+               else:
+                  if array[34] <= 0.000657:
+                     classify['television'] = classify['television'] + 1
+                  else:
+                     if array[60] <= 0.004051:
+                        if array[30] <= 0.005159:
+                           if array[19] <= 0.003401:
+                              classify['computer'] = classify['computer'] + 1
+                           else:
+                              classify['television'] = classify['television'] + 1
+                        else:
+                           classify['computer'] = classify['computer'] + 1
+                     else:
+                        classify['computer'] = classify['computer'] + 1
+            else:
+               classify['television'] = classify['television'] + 1
+         else:
+            classify['computer'] = classify['computer'] + 1
+   
+   # Flag -d will print the dictionary
+   if 'd' in Options:
+      print classify
+   
+   # Selects the classification with largest number of tallies
+   decision_val = 0
+   total_val = 0
+   decision_str = ''
+   alt_str = ''
+   for device, val in classify.iteritems():
+      total_val = total_val + val
+      if val > decision_val:
+         alt_str = decision_str
+         decision_val = val
+         decision_str = device
+   
+   # Print out classification, or possible classifications
+   # Note: 19-11-2014 The percent accuracy for classification is hard coded below.
+   if (float(decision_val)/total_val) > 0.7:
+      print "With {1}% confidence, this is a {0}.\n".format(decision_str, (decision_val*100/total_val))
+   else:
+      print "Could not classify device. It might be a {0}".format(decision_str),
+      if len(alt_str) > 1:
+         print "or it could be a {0}.\n".format(alt_str)
+      else:
+         print "or it could be a {0}.\n".format("platypus")
 
+##
+   
+   
 def write_output():
    tokens = sys.argv[-1].split('.')
    filename = tokens[0] + ".txt"
@@ -215,36 +292,52 @@ def write_output():
          input = raw_input("Please enter either \'y\' or \'n\'.\n")
       if input == 'n':
          print "Output not written."
+      elif input == 'y':
+         output(filename)
    else:
-      out = open(filename, 'w')
-      for element in Spectrum:
-         out.write(str(element) + "\n")
-      out.close()
+      output(filename)
+      
+def output(filename):
+   out = open(filename, 'w')
+   for element in Spectrum:
+      out.write(str(element) + "\n")
+   out.close()
 
 ## Added by Kevin Doyle
 #  based on Vincent's code from write_output()
 #  Outputs individual power spectrum data to CSV file
 #  filename format: [input file]_is.csv
-def write_ind_spectrum():
+def write_indv_spectrum():
+
+   # Collects file name from input
    tokens = sys.argv[-1].split('.')
    filename = tokens[0] + "_is.csv"
+   
+   # Check to see if the file exists, verify overwrite
    if os.path.isfile(filename):
       input = raw_input("Error: Output file already exists! Overwrite? (y/n)\n")
       while input != 'y' and input != 'n':
          input = raw_input("Please enter either \'y\' or \'n\'.\n")
       if input == 'n':
          print "Individual spectrum output not written."
+      elif input == 'y':
+         output_is(filename)
    else:
-      idx_stop = (len(individual_spectrum_array[0]) - 1)
-      out = open(filename, 'w')
-      for array in individual_spectrum_array:
-         for idx, value in enumerate(array):
-            out.write("{0}".format(float(value)))
-            if idx != idx_stop:
-               out.write(",")
-         out.write("\n")
-      out.close()
+      output_is(filename)
 ##
+
+def output_is(filename):
+   idx_stop = (len(individual_spectrum_array[0]) - 1)
+   out = open(filename, 'w')
+   for array in individual_spectrum_array:
+      for idx, value in enumerate(array):
+         out.write("{0}".format(float(value)))
+         if idx != idx_stop:
+            out.write(",")
+         #else:
+         #   out.write(",computer")
+      out.write("\n")
+   out.close()
       
 def print_help():
    print "\nAnalysis.py."
@@ -257,9 +350,10 @@ def print_help():
    print "1. Numpy array printed to stdout."
    print "2. Spectrum written to text file."
    print "\nOptions may be arranged in any order, and in any number of groups"
+   print "-C:\t Classify device data using J48 Decision Tree."
    print "-f:\t Fragmented data. This handles gaps in the data."
    print "-h:\t Help. Display this message."
-   print "-I:\t Print individual spectrum data."
+   print "-I:\t Output individual spectrum data."
    print "-p:\t Print. Print numpy array containing spectrum to terminal."
    print "-V:\t View. Display plot of spectrum, with the mean and multiples of the standard deviation."
    print "-v:\t Visualize. Print plot to file."
@@ -297,6 +391,8 @@ if __name__ == '__main__':
    if 'v' in Options or 'V' in Options:
       display(Spectrum)
    ## Added by Kevin Doyle
-   if 'I' in Options:
-      write_ind_spectrum()
+   if 'I' in Options and not 'C' in Options:
+      write_indv_spectrum()
+   if 'C' in Options:
+      J48_classify()
    ##
