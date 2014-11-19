@@ -226,21 +226,28 @@ def J48_classify():
    classify = {'television':0, 'microwave':0, 'computer':0}
    
    # Decision tree, as defined in Weka
-   for array in individual_spectrum_array:
-      if array[93] <= 0.000065:
+   #
+   # The data files used to train this classifier:
+   #  1_raw_V_MacBook_60W
+   #  4_raw_Q_TV
+   #  3_raw_V_Flatpanel_Monitor
+   #  7_raw_Q_Microwave_1kW
+   #
+   for spectrum in individual_spectrum_array:
+      if spectrum[93] <= 0.000065:
          classify['microwave'] = classify['microwave'] + 1
       else:
-         if array[6] <= 0.060487:
-            if array[28] <= 0.031599:
-               if array[83] <= 0.000789:
+         if spectrum[6] <= 0.060487:
+            if spectrum[28] <= 0.031599:
+               if spectrum[83] <= 0.000789:
                   classify['television'] = classify['television'] + 1
                else:
-                  if array[34] <= 0.000657:
+                  if spectrum[34] <= 0.000657:
                      classify['television'] = classify['television'] + 1
                   else:
-                     if array[60] <= 0.004051:
-                        if array[30] <= 0.005159:
-                           if array[19] <= 0.003401:
+                     if spectrum[60] <= 0.004051:
+                        if spectrum[30] <= 0.005159:
+                           if spectrum[19] <= 0.003401:
                               classify['computer'] = classify['computer'] + 1
                            else:
                               classify['television'] = classify['television'] + 1
