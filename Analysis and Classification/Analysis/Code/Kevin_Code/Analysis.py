@@ -26,7 +26,7 @@
 #  -C processes the input file and classifies it using a
 #  a static classification routine. This classification was
 #  generated in Weka. 
-# Output: 
+# Output: to console
 ##
 
 #For numerical analysis                                                 
@@ -223,42 +223,70 @@ def display(spectrum):
 #  With option -C, this will output classification information    
 def J48_classify():
    # These are the supported categories
-   classify = {'television':0, 'microwave':0, 'computer':0}
+   classify = {'lamp':0, 'microwave':0, 'computer':0}
    
    # Decision tree, as defined in Weka
    #
    # The data files used to train this classifier:
+   #  1_raw_A_Lamp_43W
+   #  1_raw_D_MacBook_60W
+   #  1_raw_Q_Lamp_100W
    #  1_raw_V_MacBook_60W
-   #  4_raw_Q_TV
-   #  3_raw_V_Flatpanel_Monitor
+   #  2_raw_A_Thinkpad
+   #  2_raw_D_Lamp_72W
+   #  2_raw_V_Netbook
+   #  3_raw_K_lamp_20W
    #  7_raw_Q_Microwave_1kW
    #
+   #
+   
    for spectrum in individual_spectrum_array:
-      if spectrum[93] <= 0.000065:
-         classify['microwave'] = classify['microwave'] + 1
-      else:
-         if spectrum[6] <= 0.060487:
-            if spectrum[28] <= 0.031599:
-               if spectrum[83] <= 0.000789:
-                  classify['television'] = classify['television'] + 1
+      if spectrum[17] <= 0.080008:
+         if spectrum[70] <= 0.000062:
+            if spectrum[88] <= 0.000057:
+               if spectrum[89] <= 0.000046:
+                  classify['microwave'] = classify['microwave'] + 1
                else:
-                  if spectrum[34] <= 0.000657:
-                     classify['television'] = classify['television'] + 1
+                  if spectrum[5] <= 0.793267:
+                     classify['microwave'] = classify['microwave'] + 1
                   else:
-                     if spectrum[60] <= 0.004051:
-                        if spectrum[30] <= 0.005159:
-                           if spectrum[19] <= 0.003401:
-                              classify['computer'] = classify['computer'] + 1
-                           else:
-                              classify['television'] = classify['television'] + 1
-                        else:
-                           classify['computer'] = classify['computer'] + 1
+                     classify['lamp'] = classify['lamp'] + 1
+            else:
+               classify['lamp'] = classify['lamp'] + 1
+         else:
+            if spectrum[63] <= 0.000744:
+               if spectrum[16] <= 0.010938:
+                  classify['lamp'] = classify['lamp'] + 1
+               else:
+                  if spectrum[44] <= 0.000517:
+                     classify['microwave'] = classify['microwave'] + 1
+                  else:
+                     classify['lamp'] = classify['lamp'] + 1
+            else:
+               if spectrum[10] <= 0.033579:
+                  if spectrum[6] <= 0.009659:
+                     if spectrum[37] <= 0.016429:
+                        classify['lamp'] = classify['lamp'] + 1
                      else:
                         classify['computer'] = classify['computer'] + 1
-            else:
-               classify['television'] = classify['television'] + 1
-         else:
-            classify['computer'] = classify['computer'] + 1
+                  else:
+                     if spectrum[99] <= 0.009694:
+                        if spectrum[0] <= 0.050009:
+                           classify['lamp'] = classify['lamp'] + 1
+                        else:
+                           if spectrum[53] <= 0.000425:
+                              classify['lamp'] = classify['lamp'] + 1
+                           else:
+                              classify['computer'] = classify['computer'] + 1
+                     else:
+                        if spectrum[45] <= 0.003079:
+                           classify['computer'] = classify['computer'] + 1
+                        else:
+                           classify['lamp'] = classify['lamp'] + 1
+               else:
+                  classify['lamp'] = classify['lamp'] + 1
+      else:
+         classify['computer'] = classify['computer'] + 1
    
    # Flag -d will print the dictionary
    if 'd' in Options:
@@ -312,6 +340,7 @@ def output(filename):
    for element in Spectrum:
       out.write(str(element) + "\n")
    out.close()
+#
 
 ## Added by Kevin Doyle
 #  based on Vincent's code from write_output()
