@@ -208,29 +208,23 @@ def display(spectrum):
 			pyp.savefig(filename) 
 
 def write_output():
-   tokens = sys.argv[-1].split('.')
-   filename = tokens[0] + ".txt"
+	tokens = sys.argv[-1].split('.')
+	filename = tokens[0] + ".txt"
 
-   #If a file with the same name already exists,
-   #check before overwriting and skip if necessary
-   if os.path.isfile(filename):
-      input = raw_input("Error: Output file already exists! Overwrite? (y/n) : ")
-      while input != 'y' and input != 'n':
-         input = raw_input("Please enter either \'y\' or \'n\'.\n")
-      if input == 'n':
-         print "Writing skipped."
-         return
-   #Write
-   out = open(filename, 'w')
-   for element in Spectrum:
-      out.write(str(element) + ",")
-   out.close()
-   
-   #Write pickle
-   pkl_name = tokens[0] + "_pickle.Spectrum"
-   pkl_out = open( pkl_name, 'w' )
-   pickle.dump( Spectrum, pkl_out )
-   pkl_out.close()
+	#If a file with the same name already exists,
+	#check before overwriting and skip if necessary
+	if os.path.isfile(filename):
+		input = raw_input("Error: Output file already exists! Overwrite? (y/n) : ")
+		while input != 'y' and input != 'n':
+			input = raw_input("Please enter either \'y\' or \'n\'.\n")
+		if input == 'n':
+			print "Writing skipped."
+			return
+	#Write
+	out = open(filename, 'w')
+	for element in Spectrum:
+		out.write(str(element) + ",")
+	out.close()
 
 def print_help():
 	print "\nAnalysis.py."
@@ -289,41 +283,43 @@ def classify(spectrum):
 def train_classifier():
    dir = 'training_data/'
    training_data = []
-   labels = []
+   labels = [ 'laptop computer', 'lamp', 'microwave' ]
    
    # Puts training data into an array
    for subdir, dirs, files in os.walk( dir ):
       for file in files:
-         if file.endswith('Spectrum'):
-            # Assembles training data feature set
-            pkl_file = open( os.path.join( subdir, file ), 'r' )
-            spec = pickle.load( pkl_file )
-            spec = spec.tolist()
-
-            training_data.append( spec )
-            
-            # Assembles labels corresponding with feature set data
-            # Note that the file names must be properly formatted
-            # Note that this solution does not allow the user to add device types
-            first_letter = file[0]
-            if first_letter == 'c':
-               labels.append( 'laptop computer' )
-            elif first_letter == 'l':
-               labels.append( 'lamp' )
-            elif first_letter == 'm':
-               labels.append( 'microwave' )
-            else:
-               print "Error processing training data. Check the filename formats."
-               exit()
+         # Assembles labels corresponding with feature set data
+         # Note that the file names must be properly formatted
+         # Note that this solution does not allow the user to add device types
+         first_letter = file[0]
+         if first_letter == 'c':
+            label = 'laptop computer'
+         elif first_letter == 'l':
+            label = 'lamp'
+         elif first_letter == 'm':
+            label = 'microwave' 
+         else:
+            print "Error processing training data. Check the filename formats."
+            exit()
       
-   # Verify each training_data value has a corresponding label
-   if len(training_data) != len(labels):
-      print "Error processing training data. Something is wrong, good luck finding it."
-      exit()
+         # Assembles training data feature set
+         data = open( os.path.join( subdir, file ), 'r' ).readlines()
+         temp = []
+         for value in list(csv.reader(data)):
+            for subval in value:
+               temp.append( subval )
+         
+         # The feature to be appended is format [ data, label ]
+         feature = []
+         feature.append( label )
+         feature.append( temp[0:-1] )
+         
+         training_data.append( feature )
+         
    
    # Make the classifier (yay!)
    # We will use K Nearest Neighbors (knn)
-   knn = KNeighborsClassifier( n_neighbors=3 )
+   knn = KNeighborsClassifier()
    knn.fit( training_data, labels )
    
    # Save classifier
@@ -339,9 +335,11 @@ def machine_classify( Spectrum ):
    knn = pickle.load( pkl_file )
    pkl_file.close()
    
-   spec = Spectrum.tolist()
-
-   print( knn.predict( spec ) )
+   #for idx, element in enumerate(Spectrum):
+	#	out.write(str(element) + ",")
+   
+   print len(Spectrum.tolist())
+   print( knn.predict( Spectrum.tolist() ) )
    
          
 #Execution begins here

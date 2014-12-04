@@ -19,22 +19,13 @@ import matplotlib.pyplot as pyp
                                                                         
 #For manipulating command-line arguments                                
 import sys                                                              
-#For reading CSV files
-import csv
-
-                                                                      
+                                                                        
 #For handling files                                                      
 import os 
                                                               
 #For using regular expressions                                          
-import re
-
-#For machine classification
-from sklearn.neighbors import KNeighborsClassifier
-
-#To save the classifier
-import pickle
-           
+import re                                                               
+                                                                        
 def init():
 	#Check for proper number of arguments, die if necessary
 	#max args = 2 + number of valid options
@@ -60,7 +51,7 @@ def init():
 
 	#When adding options, be sure to add a description to the -h section
 	#below
-	valid_options = 'cdfhMpTvVw'
+	valid_options = 'cdfhpvVw'
 	alleged_options = list(set(''.join(sys.argv[1:-1])))
 	options = [x for x in alleged_options if re.search(x, valid_options)]
 	non_options = [x for x in alleged_options if x not in options and x != '-']
@@ -208,29 +199,23 @@ def display(spectrum):
 			pyp.savefig(filename) 
 
 def write_output():
-   tokens = sys.argv[-1].split('.')
-   filename = tokens[0] + ".txt"
+	tokens = sys.argv[-1].split('.')
+	filename = tokens[0] + ".txt"
 
-   #If a file with the same name already exists,
-   #check before overwriting and skip if necessary
-   if os.path.isfile(filename):
-      input = raw_input("Error: Output file already exists! Overwrite? (y/n) : ")
-      while input != 'y' and input != 'n':
-         input = raw_input("Please enter either \'y\' or \'n\'.\n")
-      if input == 'n':
-         print "Writing skipped."
-         return
-   #Write
-   out = open(filename, 'w')
-   for element in Spectrum:
-      out.write(str(element) + ",")
-   out.close()
-   
-   #Write pickle
-   pkl_name = tokens[0] + "_pickle.Spectrum"
-   pkl_out = open( pkl_name, 'w' )
-   pickle.dump( Spectrum, pkl_out )
-   pkl_out.close()
+	#If a file with the same name already exists,
+	#check before overwriting and skip if necessary
+	if os.path.isfile(filename):
+		input = raw_input("Error: Output file already exists! Overwrite? (y/n) : ")
+		while input != 'y' and input != 'n':
+			input = raw_input("Please enter either \'y\' or \'n\'.\n")
+		if input == 'n':
+			print "Writing skipped."
+			return
+	#Write
+	out = open(filename, 'w')
+	for element in Spectrum:
+		out.write(str(element) + ",")
+	out.close()
 
 def print_help():
 	print "\nAnalysis.py."
@@ -286,102 +271,31 @@ def classify(spectrum):
 	else:
 		print "%s\t was recorded from a lamp." % (output_string)
 
-def train_classifier():
-   dir = 'training_data/'
-   training_data = []
-   labels = []
-   
-   # Puts training data into an array
-   for subdir, dirs, files in os.walk( dir ):
-      for file in files:
-         if file.endswith('Spectrum'):
-            # Assembles training data feature set
-            pkl_file = open( os.path.join( subdir, file ), 'r' )
-            spec = pickle.load( pkl_file )
-            spec = spec.tolist()
 
-            training_data.append( spec )
-            
-            # Assembles labels corresponding with feature set data
-            # Note that the file names must be properly formatted
-            # Note that this solution does not allow the user to add device types
-            first_letter = file[0]
-            if first_letter == 'c':
-               labels.append( 'laptop computer' )
-            elif first_letter == 'l':
-               labels.append( 'lamp' )
-            elif first_letter == 'm':
-               labels.append( 'microwave' )
-            else:
-               print "Error processing training data. Check the filename formats."
-               exit()
-      
-   # Verify each training_data value has a corresponding label
-   if len(training_data) != len(labels):
-      print "Error processing training data. Something is wrong, good luck finding it."
-      exit()
-   
-   # Make the classifier (yay!)
-   # We will use K Nearest Neighbors (knn)
-   knn = KNeighborsClassifier( n_neighbors=3 )
-   knn.fit( training_data, labels )
-   
-   # Save classifier
-   pkl_file = open( 'knn_pickle.classifier', 'w' )
-   pickle.dump( knn, pkl_file )
-   pkl_file.close()
-   
-   
-def machine_classify( Spectrum ):
-   
-   # Load classifier
-   pkl_file = open( 'knn_pickle.classifier', 'r' )
-   knn = pickle.load( pkl_file )
-   pkl_file.close()
-   
-   spec = Spectrum.tolist()
 
-   print( knn.predict( spec ) )
-   
-         
 #Execution begins here
+blockwidth = 200
+Currents = []
+Times = []
 
-if __name__ == '__main__':
+Options = init()
+Currents, Times = import_and_trim()
+Blocklist = produce_blocklist()
+Spectrum = produce_mean_normalized_power_spectrum(Blocklist)
 
-   blockwidth = 200
-   Currents = []
-   Times = []
+#mean and std are used by both display() and classify()
+#only calculate once.
+mean = np.mean(Spectrum)
+standard_deviation = np.std(Spectrum)
 
-   Options = init()
-   
-   ## Added by Kevin Doyle
-   if 'T' in Options:
-      train_classifier()
-      sys.exit()
-   ##
-   
-   
-   Currents, Times = import_and_trim()
-   Blocklist = produce_blocklist()
-   Spectrum = produce_mean_normalized_power_spectrum(Blocklist)
-
-   #mean and std are used by both display() and classify()
-   #only calculate once.
-   mean = np.mean(Spectrum)
-   standard_deviation = np.std(Spectrum)
-   
-   #This should be done first
-   if 'h' in Options:
-      print_help()
-   if 'c' in Options:
-      classify(Spectrum)
-   if 'p' in Options:
-      print Spectrum
-   if 'w' in Options:
-      write_output()
-   if 'v' in Options or 'V' in Options:
-      display(Spectrum)
-   ## Added by Kevin Doyle
-   if 'M' in Options:
-      machine_classify(Spectrum)
-   ##
+#This should be done first
+if 'h' in Options:
+	print_help()
+if 'c' in Options:
+	classify(Spectrum)
+if 'p' in Options:
+	print Spectrum
+if 'w' in Options:
+	write_output()
+if 'v' in Options or 'V' in Options:
+	display(Spectrum)

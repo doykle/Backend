@@ -294,36 +294,41 @@ def train_classifier():
    # Puts training data into an array
    for subdir, dirs, files in os.walk( dir ):
       for file in files:
-         if file.endswith('Spectrum'):
-            # Assembles training data feature set
-            pkl_file = open( os.path.join( subdir, file ), 'r' )
-            spec = pickle.load( pkl_file )
-            spec = spec.tolist()
-
-            training_data.append( spec )
-            
-            # Assembles labels corresponding with feature set data
-            # Note that the file names must be properly formatted
-            # Note that this solution does not allow the user to add device types
-            first_letter = file[0]
-            if first_letter == 'c':
-               labels.append( 'laptop computer' )
-            elif first_letter == 'l':
-               labels.append( 'lamp' )
-            elif first_letter == 'm':
-               labels.append( 'microwave' )
-            else:
-               print "Error processing training data. Check the filename formats."
-               exit()
-      
+         # Assembles training data feature set
+         data = open( os.path.join( subdir, file ), 'r' ).readlines()
+         temp = []
+         for value in list(csv.reader(data)):
+            for subval in value:
+               temp.append( subval )
+         
+         # Note: -2 is due to Spectrum.tolist() being one value shorter, when processed in
+         # machine_classify(). Not sure why. This should be looked into
+         training_data.append( temp[0:-1] )
+         
+         # Assembles labels corresponding with feature set data
+         # Note that the file names must be properly formatted
+         # Note that this solution does not allow the user to add device types
+         first_letter = file[0]
+         if first_letter == 'c':
+            labels.append( 'laptop computer' )
+         elif first_letter == 'l':
+            labels.append( 'lamp' )
+         elif first_letter == 'm':
+            labels.append( 'microwave' )
+         else:
+            print "Error processing training data. Check the filename formats."
+            exit()
+   
    # Verify each training_data value has a corresponding label
    if len(training_data) != len(labels):
       print "Error processing training data. Something is wrong, good luck finding it."
       exit()
    
+   print training_data[0]
+   
    # Make the classifier (yay!)
    # We will use K Nearest Neighbors (knn)
-   knn = KNeighborsClassifier( n_neighbors=3 )
+   knn = KNeighborsClassifier()
    knn.fit( training_data, labels )
    
    # Save classifier
@@ -339,9 +344,13 @@ def machine_classify( Spectrum ):
    knn = pickle.load( pkl_file )
    pkl_file.close()
    
-   spec = Spectrum.tolist()
-
-   print( knn.predict( spec ) )
+   #for idx, element in enumerate(Spectrum):
+	#	out.write(str(element) + ",")
+   
+   specs = Spectrum.tolist()
+   print "\n\n"
+   print specs
+   #print( knn.predict( specs ) )
    
          
 #Execution begins here
