@@ -251,7 +251,7 @@ def print_help():
    print "-V:\t View. Display plot of spectrum, with the mean and multiples of the standard deviation."
    print "-v:\t Visualize. Print plot to file."
    print "-w:\t Write. Write spectrum to file, each array element on its own line"
-   print "-r:\t Record. Record signature and device type into scikit-learn; note that it overwrites existing clf.p"
+   print "-r:\t Record. Record signature and device type into scikit-learn; note that it overwrites existing classifier.p"
 
    print "\nExamples:"
    print "1: Handle fragmented data, view plot, write spectrum to file"
@@ -301,24 +301,24 @@ def preload_classifier( ):
    
    # Make the classifier (yay!)
    # Using Naive Bayes
-   clf = GaussianNB()
-   clf.fit( training_data, labels )
+   classifier = GaussianNB()
+   classifier.fit( training_data, labels )
    
    ### Cross Validation, include ALL data
-   #print(cross_validation.cross_val_score( clf, training_data, labels, cv=3 ))
+   #print(cross_validation.cross_val_score( classifier, training_data, labels, cv=3 ))
    ###
    
    ### Used to check accuracy, include ALL data
    #X_train, X_test, y_train, y_test = cross_validation.train_test_split( training_data, labels, test_size=0.3, random_state=0)
-   #clf = GaussianNB()
-   #clf.fit( X_train, y_train )
-   #print( clf.score(X_test, y_test) )
+   #classifier = GaussianNB()
+   #classifier.fit( X_train, y_train )
+   #print( classifier.score(X_test, y_test) )
    ###
    
-   data_group = { 'data':training_data, 'target':labels, 'clf':clf }
+   data_group = { 'data':training_data, 'target':labels, 'classifier':classifier }
    
    # Save classifier
-   pkl_file = open( 'clf.p', 'w' )
+   pkl_file = open( 'classifier.p', 'w' )
    pickle.dump( data_group, pkl_file )
    pkl_file.close()
    
@@ -358,7 +358,7 @@ def prep_training( data, target ):
    min_count = 99999
    min_label = ""
    
-   # Count the data points for each device
+   # Count the data points for each device type
    for feature, label in zip( data, target ):
       
       if label_dict.has_key( label ):
@@ -391,9 +391,9 @@ def prep_training( data, target ):
             array_idx = counter % min_count
             for value, ( idx, sum ) in zip( feature, enumerate(temp_feat_array[ array_idx ] ) ) :
                   temp_feat_array[ array_idx ][ idx ] = np.add( value, sum )
-            print label.tostring()
+            #print label.tostring()
             temp_feat_array_count[ array_idx ] = np.add( temp_feat_array_count[ array_idx ], 1 )
-            print temp_feat_array_count[ array_idx ]
+            #print temp_feat_array_count[ array_idx ]
                   
       for idx, feature in enumerate( temp_feat_array ):
          # Divide the sum of features by the number of features summed
@@ -443,8 +443,10 @@ def record(spectrum):
    
    # Pickle stores a dictionary of data, target, and the classifier
    # If pickle file exists, open it
+   # data is spectrum array
+   # target is corresponding label array
    if os.path.isfile(picklename):                                               
-      f = open("clf.p", "r+")
+      f = open("classifier.p", "r+")
       combined = pickle.load(f)
       data = combined['data']
       target = combined['target']
@@ -460,25 +462,25 @@ def record(spectrum):
    makeclf = True
    
    # The classifier
-   clf = None
+   classifier = None
    
    if (makeclf == True):
-      print "make clf"
-      #clf = neighbors.NearestCentroid()
-      clf = GaussianNB()
+      print "make classifier"
+      #classifier = neighbors.NearestCentroid()
+      classifier = GaussianNB()
       # DBUG Kevin 12-8-2014: What is this line below? Can it be removed? 
-#	clf = neighbors.NearestCentroid() if (makeclf == True) else None
-   if (clf != None):
+#	classifier = neighbors.NearestCentroid() if (makeclf == True) else None
+   if (classifier != None):
       print "make fit"
       
       # This is where the classifier is trained! 
       temp_data, temp_target = prep_training( data, target )
-      clf.fit(temp_data, temp_target)
+      classifier.fit(temp_data, temp_target)
             
    # Dictionary will store the data, target, AND classifier-- 
    #   --so just one object would be pickled
-   combined = {'data':data, 'target':target, 'clf':clf}
-   f = open("clf.p", "w+")
+   combined = {'data':data, 'target':target, 'classifier':classifier}
+   f = open("classifier.p", "w+")
    pickle.dump(combined, f) #stores pickle
    f.close()
 
@@ -488,17 +490,17 @@ def classify(spectrum):
    #for i in range(0, spectrum.size):
    #	spectrum[i] /= mean
    #already normalized, no need to divide by mean again..
-   clf = None #classifier
+   classifier = None #classifier
    if os.path.isfile(picklename): #reads in classifier, if it exists                                               
-      f = open("clf.p", "r+")
+      f = open("classifier.p", "r+")
       combined = pickle.load(f)
-      clf = combined['clf']
+      classifier = combined['classifier']
       f.close()
    else:
       print "there is no classifier!"
 
-   if (clf):
-      print "recorded from", clf.predict(spectrum)[0]
+   if (classifier):
+      print "recorded from", classifier.predict(spectrum)[0]
       # .predict returns a one-dimensional array, so take index 0
    else:
       print "More input needed to create a classifier:"
@@ -531,7 +533,7 @@ if __name__ == '__main__':
    #only calculate once.
    mean = np.mean(Spectrum)
    standard_deviation = np.std(Spectrum)
-   picklename = "clf.p"
+   picklename = "classifier.p"
 
    #This should be done first
    if 'h' in Options:
